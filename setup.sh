@@ -15,7 +15,6 @@ echo "Setting up $domain"
 awscli=aws
 region=us-east-1
 
-caller_ref="$(date)"
 tempfile=$(mktemp)
 
 ################################################################################
@@ -71,8 +70,9 @@ $awscli s3api put-bucket-policy --bucket "www.$domain" --policy file://$tempfile
 ################################################################################
 # Create hosted zone
 ################################################################################
-hosted_zone_id=$($awscli route53 create-hosted-zone --name "$domain" --caller-reference $caller_ref \
-                    | jq -r '.["HostedZone"]["Id"]')
+hosted_zone=$($awscli route53 create-hosted-zone --name "$domain" --caller-reference "$(date)")
+hosted_zone_id=$(echo $hosted_zone | jq -r '.["HostedZone"]["Id"]')
+name_servers=$(echo $hosted_zone | jq -r '.["DelegationSet"]["NameServers"][]')
 
 ################################################################################
 # Request certificate
@@ -80,8 +80,18 @@ hosted_zone_id=$($awscli route53 create-hosted-zone --name "$domain" --caller-re
 cert_arn=$($awscli acm request-certificate --domain-name "$domain" --subject-alternative-names "*.$domain" --validation-method DNS \
               | jq -r '.["CertificateArn"]')
 
+################################################################################
+# Wait for certificate validation record
+################################################################################
 validation_record=$($awscli acm describe-certificate --certificate-arn $cert_arn \
                         | jq -r -c '.["Certificate"]["DomainValidationOptions"][0]["ResourceRecord"]')
+while [[ $validation_record == "null" ]]
+do
+    echo "Certificate validation record: $validation_record. Waiting to retry..."
+    sleep 10
+    validation_record=$($awscli acm describe-certificate --certificate-arn $cert_arn \
+                            | jq -r -c '.["Certificate"]["DomainValidationOptions"][0]["ResourceRecord"]')
+done
 validation_record_name=$(echo $validation_record | jq -r '.["Name"]')
 validation_record_type=$(echo $validation_record | jq -r '.["Type"]')
 validation_record_value=$(echo $validation_record | jq -r '.["Value"]')
@@ -97,7 +107,7 @@ cat > $tempfile <<EOF
       "ResourceRecordSet": {
         "Name": "$validation_record_name",
         "Type": "$validation_record_type",
-        "TTL": 300,
+        "TTL": 60,
         "ResourceRecords": [
           {
             "Value": "$validation_record_value"
@@ -111,15 +121,19 @@ EOF
 $awscli route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file://$tempfile
 
 ################################################################################
-# [OPTIONAL?] Wait until certificate has been validated and issued
+# Wait until certificate has been validated and issued
 ################################################################################
-# cert_status=$($awscli acm describe-certificate --certificate-arn $cert_arn \
-#                   | jq -r '.["Certificate"]["Status"]')
-# while [[ $cert_status != "ISSUED" ]]
-# do
-#     echo "Certificate status: $cert_status. Waiting..."
-#     sleep 60
-# done
+cert_status=$($awscli acm describe-certificate --certificate-arn $cert_arn \
+                  | jq -r '.["Certificate"]["Status"]')
+while [[ $cert_status != "ISSUED" ]]
+do
+    echo "Certificate status: $cert_status. Waiting..."
+    echo "If your domain name is not registered with Route 53, please update"
+    echo "the settings for your domain to these name servers: $name_servers"
+    sleep 30
+    cert_status=$($awscli acm describe-certificate --certificate-arn $cert_arn \
+                  | jq -r '.["Certificate"]["Status"]')
+done
 
 ################################################################################
 # Create CloudFront distributions
@@ -127,7 +141,7 @@ $awscli route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --c
 
 create_cloudfront_distribution_config() {
     local cloudfront_domain=$1
-    echo $cloudfront_domain
+    local caller_ref=$(date)
     cat > $tempfile <<EOF
 {
   "Enabled": true,
@@ -170,7 +184,7 @@ create_cloudfront_distribution_config() {
     "SSLSupportMethod": "sni-only",
     "MinimumProtocolVersion": "TLSv1.1_2016"
   },
-  "CallerReference": "$caller_ref",
+  "CallerReference": "$cloudfront_domain $caller_ref",
   "Comment": ""
 }
 EOF
