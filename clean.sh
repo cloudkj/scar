@@ -16,11 +16,15 @@ tempfile=$(mktemp)
 domain=$1
 echo "Cleaning up $domain"
 
+################################################################################
 # Delete S3 buckets
+################################################################################
 #$awscli s3api delete-bucket --bucket "$domain"
 #$awscli s3api delete-bucket --bucket "www.$domain"
 
+################################################################################
 # Delete Route 53 hosted zone
+################################################################################
 # TODO: first, get all non-SOA, non-NS records with `list-resource-record-sets`
 # second, delete records with `change-resource-records-sets`
 # third, delete-hosted-zone
@@ -56,6 +60,17 @@ delete_cloudfront_distribution() {
 
 delete_cloudfront_distribution "$domain"
 delete_cloudfront_distribution "www.$domain"
+
+################################################################################
+# Delete certificate
+################################################################################
+cert_arn=$($awscli acm list-certificates | \
+               jq -r ".[\"CertificateSummaryList\"][] | select(.[\"DomainName\"] == \"$domain\") | .[\"CertificateArn\"]")
+if [[ ! $cert_arn ]]; then
+    echo "Certificate not found for $domain"
+else
+    $awscli acm delete-certificate --certificate-arn $cert_arn
+fi
 
 echo "Cleanup complete"
 rm -f $tempfile
