@@ -4,6 +4,7 @@
             "Type": "String"
         }
     },
+
     "Resources": {
 
         "S3WWWBucket": {
@@ -53,7 +54,7 @@
             },
         },
 
-        "Route53HostedZone": {
+        "Route53Zone": {
             "Type" : "AWS::Route53::HostedZone",
             "Properties" : {
                 "Name": {
@@ -64,6 +65,7 @@
 
         "ACMCertificate": {
             "Type": "AWS::CertificateManager::Certificate",
+            "DependsOn": "Route53Zone",
             "Properties": {
                 "DomainName": {
                     "Ref": "Domain"
@@ -246,8 +248,71 @@
                     }
                 }
             }
+        },
+
+        "Route53Records": {
+            "Type": "AWS::Route53::RecordSetGroup",
+            "DependsOn": [
+                "Route53Zone",
+                "CloudFrontRootDistribution",
+                "CloudFrontWWWDistribution"
+            ],
+            "Properties": {
+                "HostedZoneId": {
+                    "Ref": "Route53Zone"
+                },
+                "RecordSets": [
+                    {
+                        "Name": {
+                            "Ref": "Domain"
+                        },
+                        "Type": "A",
+                        "AliasTarget": {
+                            "DNSName": {
+                                "Ref": "CloudFrontRootDistribution"
+                            },
+                            "EvaluateTargetHealth": false,
+                            "HostedZoneId": "Z2FDTNDATAQYW2"
+                        }
+                    },
+                    {
+                        "Name": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "www.",
+                                    {
+                                        "Ref": "Domain"
+                                    }
+                                ]
+                            ]
+                        },
+                        "Type": "A",
+                        "AliasTarget": {
+                            "DNSName": {
+                                "Ref": "CloudFrontWWWDistribution"
+                            },
+                            "EvaluateTargetHealth": false,
+                            "HostedZoneId": "Z2FDTNDATAQYW2"
+                        }
+                    }
+                ]
+            }
         }
 
     },
+
+    "Outputs": {
+        "Route53NameServers": {
+            "Description": "Name servers for Route 53 hosted zone",
+            "Value": {
+                "Fn::GetAtt": [
+                    "Route53Zone",
+                    "NameServers"
+                ]
+            }
+        }
+    },
+
     "AWSTemplateFormatVersion": "2010-09-09"
 }
