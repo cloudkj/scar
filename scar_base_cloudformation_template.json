@@ -1,0 +1,55 @@
+{
+    "Parameters": {
+        "Domain": {
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "S3WWWBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "www.",
+                            {
+                                "Ref": "Domain"
+                            }
+                        ]
+                    ]
+                },
+                "AccessControl": "PublicRead",
+                "WebsiteConfiguration": {
+                    "IndexDocument": "index.html",
+                    "ErrorDocument": "404.html"
+                }
+            }
+        },
+        "S3RootBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Ref": "Domain"
+                },
+                "WebsiteConfiguration": {
+                    "RedirectAllRequestsTo": {
+                        "HostName": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "www.",
+                                    {
+                                        "Ref": "Domain"
+                                    }
+                                ]
+                            ]
+                        },
+                        "Protocol": "https"
+                    }
+                }
+            },
+        }
+    },
+    "AWSTemplateFormatVersion": "2010-09-09"
+}
