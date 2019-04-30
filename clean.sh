@@ -19,8 +19,8 @@ echo "Cleaning up $domain"
 ################################################################################
 # Delete S3 buckets
 ################################################################################
-#$awscli s3api delete-bucket --bucket "$domain"
-#$awscli s3api delete-bucket --bucket "www.$domain"
+$awscli s3 rb --force "s3://$domain"
+$awscli s3 rb --force "s3://www.$domain"
 
 ################################################################################
 # Delete Route 53 hosted zone
