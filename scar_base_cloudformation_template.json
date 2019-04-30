@@ -5,6 +5,7 @@
         }
     },
     "Resources": {
+
         "S3WWWBucket": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
@@ -26,6 +27,7 @@
                 }
             }
         },
+
         "S3RootBucket": {
             "Type": "AWS::S3::Bucket",
             "Properties": {
@@ -49,7 +51,203 @@
                     }
                 }
             },
+        },
+
+        "Route53HostedZone": {
+            "Type" : "AWS::Route53::HostedZone",
+            "Properties" : {
+                "Name": {
+                    "Ref": "Domain"
+                }
+            }
+        },
+
+        "ACMCertificate": {
+            "Type": "AWS::CertificateManager::Certificate",
+            "Properties": {
+                "DomainName": {
+                    "Ref": "Domain"
+                },
+                "SubjectAlternativeNames": [
+                    "Fn::Join": [
+                        "",
+                        [
+                            "*.",
+                            {
+                                "Ref": "Domain"
+                            }
+                        ]
+                    ]
+                ],
+                "ValidationMethod": "DNS"
+            }
+        },
+
+        "CloudFrontRootDistribution": {
+            "Type": "AWS::CloudFront::Distribution",
+            "DependsOn": "ACMCertificate",
+            "Properties": {
+                "DistributionConfig": {
+                    "Enabled": true,
+                    "Origins": [
+                        {
+                            "Id": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "S3-",
+                                        {
+                                            "Ref": "Domain"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "DomainName": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Ref": "Domain"
+                                        },
+                                        ".s3-website-",
+                                        {
+                                            "Ref": "AWS::Region"
+                                        },
+                                        ".amazonaws.com"
+                                    ]
+                                ]
+                            },
+                            "CustomOriginConfig": {
+                                "OriginProtocolPolicy": "http-only",
+                                "HTTPPort": 80,
+                                "HTTPSPort": 443
+                            }
+                        }
+                    ],
+                    "DefaultCacheBehavior": {
+                        "TargetOriginId": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "S3-",
+                                    {
+                                        "Ref": "Domain"
+                                    }
+                                ]
+                            ]
+                        },
+                        "ViewerProtocolPolicy": "redirect-to-https",
+                        "MinTTL": 0,
+                        "ForwardedValues": {
+                            "QueryString": false,
+                            "Cookies": {
+                                "Forward": "none"
+                            }
+                        }
+                    },
+                    "Aliases": [
+                        {
+                            "Ref": "Domain"
+                        }
+                    ],
+                    "ViewerCertificate": {
+                        "AcmCertificateArn": {
+                            "Ref": "ACMCertificate"
+                        },
+                        "SslSupportMethod": "sni-only",
+                        "MinimumProtocolVersion": "TLSv1.1_2016"
+                    }
+                }
+            }
+        },
+
+        "CloudFrontWWWDistribution": {
+            "Type": "AWS::CloudFront::Distribution",
+            "DependsOn": "ACMCertificate",
+            "Properties": {
+                "DistributionConfig": {
+                    "Enabled": true,
+                    "Origins": [
+                        {
+                            "Id": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "S3-www.",
+                                        {
+                                            "Ref": "Domain"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "DomainName": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "www.",
+                                        {
+                                            "Ref": "Domain"
+                                        },
+                                        ".s3-website-",
+                                        {
+                                            "Ref": "AWS::Region"
+                                        },
+                                        ".amazonaws.com"
+                                    ]
+                                ]
+                            },
+                            "CustomOriginConfig": {
+                                "OriginProtocolPolicy": "http-only",
+                                "HTTPPort": 80,
+                                "HTTPSPort": 443
+                            }
+                        }
+                    ],
+                    "DefaultCacheBehavior": {
+                        "TargetOriginId": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "S3-www.",
+                                    {
+                                        "Ref": "Domain"
+                                    }
+                                ]
+                            ]
+                        },
+                        "ViewerProtocolPolicy": "redirect-to-https",
+                        "MinTTL": 0,
+                        "ForwardedValues": {
+                            "QueryString": false,
+                            "Cookies": {
+                                "Forward": "none"
+                            }
+                        }
+                    },
+                    "Aliases": [
+                        {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "www.",
+                                    {
+                                        "Ref": "Domain"
+                                    }
+                                ]
+                            ]
+                        }
+                    ],
+                    "ViewerCertificate": {
+                        "AcmCertificateArn": {
+                            "Ref": "ACMCertificate"
+                        },
+                        "SslSupportMethod": "sni-only",
+                        "MinimumProtocolVersion": "TLSv1.1_2016"
+                    }
+                }
+            }
         }
+
     },
     "AWSTemplateFormatVersion": "2010-09-09"
 }
