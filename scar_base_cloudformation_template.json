@@ -269,7 +269,10 @@
                         "Type": "A",
                         "AliasTarget": {
                             "DNSName": {
-                                "Ref": "CloudFrontRootDistribution"
+                                "Fn::GetAtt": [
+                                    "CloudFrontRootDistribution",
+                                    "DomainName"
+                                ]
                             },
                             "EvaluateTargetHealth": false,
                             "HostedZoneId": "Z2FDTNDATAQYW2"
@@ -290,7 +293,10 @@
                         "Type": "A",
                         "AliasTarget": {
                             "DNSName": {
-                                "Ref": "CloudFrontWWWDistribution"
+                                "Fn::GetAtt": [
+                                    "CloudFrontWWWDistribution",
+                                    "DomainName"
+                                ]
                             },
                             "EvaluateTargetHealth": false,
                             "HostedZoneId": "Z2FDTNDATAQYW2"
@@ -306,9 +312,14 @@
         "Route53NameServers": {
             "Description": "Name servers for Route 53 hosted zone",
             "Value": {
-                "Fn::GetAtt": [
-                    "Route53Zone",
-                    "NameServers"
+                "Fn::Join": [
+                    "\n",
+                    {
+                        "Fn::GetAtt": [
+                            "Route53Zone",
+                            "NameServers"
+                        ]
+                    }
                 ]
             }
         }
