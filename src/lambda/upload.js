@@ -36,7 +36,11 @@ function handleCreate(event, context) {
                 Key: key
             };
             s3.putObject(params, (e, d) => {
-                respond(event, context, 'SUCCESS', { Message: 'Upload completed'});
+                if (e) {
+                    respond(event, context, 'FAILED', { Message: 'Upload failed'});
+                } else {
+                    respond(event, context, 'SUCCESS', { Message: 'Upload completed'});
+                }
             });
         });
     }).on('error', (e) => {
@@ -56,11 +60,14 @@ function handleDelete(event, context) {
     s3.deleteObjects({
         Bucket: bucket,
         Delete: {
-            Quiet: true,
             Objects: [ { Key: key } ]
         }
-    }, () => {
-        respond(event, context, 'SUCCESS', { Message: `Deleted s3://${bucket}/${key}` });
+    }, (e, d) => {
+        if (e) {
+            respond(event, context, 'FAILED', { Message: `Failed to delete s3://${bucket}/${key}: ${e}` });
+        } else {
+            respond(event, context, 'SUCCESS', { Message: `Deleted s3://${bucket}/${key}` });
+        }
     });
 }
 
