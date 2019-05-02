@@ -51,7 +51,7 @@
                         "Protocol": "https"
                     }
                 }
-            },
+            }
         },
 
         "Route53Zone": {
@@ -71,15 +71,17 @@
                     "Ref": "Domain"
                 },
                 "SubjectAlternativeNames": [
-                    "Fn::Join": [
-                        "",
-                        [
-                            "*.",
-                            {
-                                "Ref": "Domain"
-                            }
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "*.",
+                                {
+                                    "Ref": "Domain"
+                                }
+                            ]
                         ]
-                    ]
+                    }
                 ],
                 "ValidationMethod": "DNS"
             }
