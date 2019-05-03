@@ -379,6 +379,7 @@ const customS3UploadWelcomeResource = [
     "CustomS3UploadWelcome",
     {
         "Type": "Custom::S3UploadWelcome",
+        "DependsOn": s3WWWBucketResource[0],
         "Properties": {
             "ServiceToken": { "Fn::GetAtt": [lambdaS3UploadResource[0], "Arn"] },
             "WelcomePageUrl": welcomePageUrl,
