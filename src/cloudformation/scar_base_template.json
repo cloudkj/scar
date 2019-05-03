@@ -1,0 +1,402 @@
+{
+  "Parameters": {
+    "Domain": {
+      "Type": "String"
+    }
+  },
+  "Outputs": {
+    "Route53NameServers": {
+      "Description": "Name servers for Route 53 hosted zone",
+      "Value": {
+        "Fn::Join": [
+          "\n",
+          {
+            "Fn::GetAtt": [
+              "Route53Zone",
+              "NameServers"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "S3WWWBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Join": [
+            "",
+            [
+              "www.",
+              {
+                "Ref": "Domain"
+              }
+            ]
+          ]
+        },
+        "AccessControl": "PublicRead",
+        "WebsiteConfiguration": {
+          "IndexDocument": "index.html",
+          "ErrorDocument": "404.html"
+        }
+      }
+    },
+    "S3RootBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Ref": "Domain"
+        },
+        "WebsiteConfiguration": {
+          "RedirectAllRequestsTo": {
+            "HostName": {
+              "Fn::Join": [
+                "",
+                [
+                  "www.",
+                  {
+                    "Ref": "Domain"
+                  }
+                ]
+              ]
+            },
+            "Protocol": "https"
+          }
+        }
+      }
+    },
+    "Route53Zone": {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "Name": {
+          "Ref": "Domain"
+        }
+      }
+    },
+    "ACMCertificate": {
+      "Type": "AWS::CertificateManager::Certificate",
+      "DependsOn": "Route53Zone",
+      "Properties": {
+        "DomainName": {
+          "Ref": "Domain"
+        },
+        "SubjectAlternativeNames": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "*.",
+                {
+                  "Ref": "Domain"
+                }
+              ]
+            ]
+          }
+        ],
+        "ValidationMethod": "DNS"
+      }
+    },
+    "CloudFrontRootDistribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "DependsOn": "ACMCertificate",
+      "Properties": {
+        "DistributionConfig": {
+          "Enabled": true,
+          "Origins": [
+            {
+              "Id": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "S3-",
+                    {
+                      "Ref": "Domain"
+                    }
+                  ]
+                ]
+              },
+              "DomainName": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Ref": "Domain"
+                    },
+                    ".s3-website-",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ".amazonaws.com"
+                  ]
+                ]
+              },
+              "CustomOriginConfig": {
+                "OriginProtocolPolicy": "http-only",
+                "HTTPPort": 80,
+                "HTTPSPort": 443
+              }
+            }
+          ],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": {
+              "Fn::Join": [
+                "",
+                [
+                  "S3-",
+                  {
+                    "Ref": "Domain"
+                  }
+                ]
+              ]
+            },
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "MinTTL": 0,
+            "ForwardedValues": {
+              "QueryString": false,
+              "Cookies": {
+                "Forward": "none"
+              }
+            }
+          },
+          "Aliases": [
+            {
+              "Ref": "Domain"
+            }
+          ],
+          "ViewerCertificate": {
+            "AcmCertificateArn": {
+              "Ref": "ACMCertificate"
+            },
+            "SslSupportMethod": "sni-only",
+            "MinimumProtocolVersion": "TLSv1.1_2016"
+          }
+        }
+      }
+    },
+    "CloudFrontWWWDistribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "DependsOn": "ACMCertificate",
+      "Properties": {
+        "DistributionConfig": {
+          "Enabled": true,
+          "Origins": [
+            {
+              "Id": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "S3-www.",
+                    {
+                      "Ref": "Domain"
+                    }
+                  ]
+                ]
+              },
+              "DomainName": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "www.",
+                    {
+                      "Ref": "Domain"
+                    },
+                    ".s3-website-",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ".amazonaws.com"
+                  ]
+                ]
+              },
+              "CustomOriginConfig": {
+                "OriginProtocolPolicy": "http-only",
+                "HTTPPort": 80,
+                "HTTPSPort": 443
+              }
+            }
+          ],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": {
+              "Fn::Join": [
+                "",
+                [
+                  "S3-www.",
+                  {
+                    "Ref": "Domain"
+                  }
+                ]
+              ]
+            },
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "MinTTL": 0,
+            "ForwardedValues": {
+              "QueryString": false,
+              "Cookies": {
+                "Forward": "none"
+              }
+            }
+          },
+          "Aliases": [
+            {
+              "Fn::Join": [
+                "",
+                [
+                  "www.",
+                  {
+                    "Ref": "Domain"
+                  }
+                ]
+              ]
+            }
+          ],
+          "ViewerCertificate": {
+            "AcmCertificateArn": {
+              "Ref": "ACMCertificate"
+            },
+            "SslSupportMethod": "sni-only",
+            "MinimumProtocolVersion": "TLSv1.1_2016"
+          }
+        }
+      }
+    },
+    "Route53Records": {
+      "Type": "AWS::Route53::RecordSetGroup",
+      "DependsOn": [
+        "Route53Zone",
+        "CloudFrontRootDistribution",
+        "CloudFrontWWWDistribution"
+      ],
+      "Properties": {
+        "HostedZoneId": {
+          "Ref": "Route53Zone"
+        },
+        "RecordSets": [
+          {
+            "Name": {
+              "Ref": "Domain"
+            },
+            "Type": "A",
+            "AliasTarget": {
+              "DNSName": {
+                "Fn::GetAtt": [
+                  "CloudFrontRootDistribution",
+                  "DomainName"
+                ]
+              },
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z2FDTNDATAQYW2"
+            }
+          },
+          {
+            "Name": {
+              "Fn::Join": [
+                "",
+                [
+                  "www.",
+                  {
+                    "Ref": "Domain"
+                  }
+                ]
+              ]
+            },
+            "Type": "A",
+            "AliasTarget": {
+              "DNSName": {
+                "Fn::GetAtt": [
+                  "CloudFrontWWWDistribution",
+                  "DomainName"
+                ]
+              },
+              "EvaluateTargetHealth": false,
+              "HostedZoneId": "Z2FDTNDATAQYW2"
+            }
+          }
+        ]
+      }
+    },
+    "IAMLambdaS3UploadRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "root",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:*",
+                    "s3:*"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "LambdaS3Upload": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.handler",
+        "Runtime": "nodejs8.10",
+        "Timeout": "30",
+        "Role": {
+          "Fn::GetAtt": [
+            "IAMLambdaS3UploadRole",
+            "Arn"
+          ]
+        },
+        "Code": {
+          "ZipFile": "const aws = require('aws-sdk');\nconst https = require(\"https\");\nconst s3 = new aws.S3();\n\nexports.handler = async (event, context) => {\n    return new Promise((resolve, reject) => {\n        switch (event.RequestType) {\n            case 'Create':\n                handleCreate(event, context);\n                break;\n            case 'Update':\n                handleUpdate(event, context);\n                break;\n            case 'Delete':\n                handleDelete(event, context);\n                break;\n        }\n    });\n};\n\nfunction handleCreate(event, context) {\n    const url = event.ResourceProperties.WelcomePageUrl;\n    const bucket = event.ResourceProperties.S3Bucket;\n    const key = event.ResourceProperties.S3Key;\n    console.log(`Uploading contents of ${url} to s3://${bucket}/${key}`);\n\n    https.get(url, (res) => {\n        let data = '';\n        res.on('data', (x) => { data += x; });\n        res.on('end', () => {\n            const params = {\n                ACL: 'public-read',\n                Body: data,\n                ContentType: 'text/html',\n                Bucket: bucket,\n                Key: key\n            };\n            s3.putObject(params, (e, d) => {\n                if (e) {\n                    respond(event, context, 'FAILED', { Message: 'Upload failed'});\n                } else {\n                    respond(event, context, 'SUCCESS', { Message: 'Upload completed'});\n                }\n            });\n        });\n    }).on('error', (e) => {\n        respond(event, context, 'FAILED', { Message: `Upload failed: ${e.message}` });\n    });\n}\n\nfunction handleUpdate(event, context) {\n    respond(event, context, 'SUCCESS', { Message: 'No-op: update event'});\n}\n\nfunction handleDelete(event, context) {\n    const bucket = event.ResourceProperties.S3Bucket;\n    const key = event.ResourceProperties.S3Key;\n    console.log(`Deleting s3://${bucket}/${key}`);\n    \n    s3.deleteObjects({\n        Bucket: bucket,\n        Delete: {\n            Objects: [ { Key: key } ]\n        }\n    }, (e, d) => {\n        if (e) {\n            respond(event, context, 'FAILED', { Message: `Failed to delete s3://${bucket}/${key}: ${e}` });\n        } else {\n            respond(event, context, 'SUCCESS', { Message: `Deleted s3://${bucket}/${key}` });\n        }\n    });\n}\n\nfunction respond(event, context, responseStatus, responseData) {\n    const responseMessage = responseStatus == \"SUCCESS\" ? \"See the details in CloudWatch Log Stream: \" + context.logStreamName : JSON.stringify(responseData.Message);\n\n    var responseBody = JSON.stringify({\n        Status: responseStatus,\n        Reason: responseMessage,\n        PhysicalResourceId: event.StackId + '::' + event.LogicalResourceId,\n        StackId: event.StackId,\n        RequestId: event.RequestId,\n        LogicalResourceId: event.LogicalResourceId,\n        Data: responseData\n    });\n\n    console.log(\"Sending response \" + responseStatus + \": \" + responseBody);\n\n    var url = require(\"url\");\n    var parsedUrl = url.parse(event.ResponseURL);\n    var options = {\n        hostname: parsedUrl.hostname,\n        port: 443,\n        path: parsedUrl.path,\n        method: \"PUT\",\n        headers: {\n            \"content-type\": \"\",\n            \"content-length\": responseBody.length\n        }\n    };\n \n    var request = https.request(options, function(response) {\n        context.done();\n    });\n \n    request.on(\"error\", function(error) {\n        console.log(\"sendResponse Error:\" + error);\n        context.done();\n    });\n  \n    request.write(responseBody);\n    request.end();\n}\n"
+        }
+      }
+    },
+    "CustomS3UploadWelcome": {
+      "Type": "Custom::S3UploadWelcome",
+      "DependsOn": "S3WWWBucket",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": [
+            "LambdaS3Upload",
+            "Arn"
+          ]
+        },
+        "WelcomePageUrl": "https://raw.githubusercontent.com/cloudkj/scar/master/src/welcome.html",
+        "S3Bucket": {
+          "Fn::Join": [
+            "",
+            [
+              "www.",
+              {
+                "Ref": "Domain"
+              }
+            ]
+          ]
+        },
+        "S3Key": "index.html"
+      }
+    }
+  }
+}
