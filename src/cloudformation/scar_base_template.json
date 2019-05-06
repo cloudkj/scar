@@ -100,7 +100,10 @@
     },
     "CloudFrontRootDistribution": {
       "Type": "AWS::CloudFront::Distribution",
-      "DependsOn": "ACMCertificate",
+      "DependsOn": [
+        "S3RootBucket",
+        "ACMCertificate"
+      ],
       "Properties": {
         "DistributionConfig": {
           "Enabled": true,
@@ -177,7 +180,10 @@
     },
     "CloudFrontWWWDistribution": {
       "Type": "AWS::CloudFront::Distribution",
-      "DependsOn": "ACMCertificate",
+      "DependsOn": [
+        "S3WWWBucket",
+        "ACMCertificate"
+      ],
       "Properties": {
         "DistributionConfig": {
           "Enabled": true,

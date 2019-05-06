@@ -102,7 +102,7 @@ const cloudFrontRootDistributionResource = [
     "CloudFrontRootDistribution",
     {
         "Type": "AWS::CloudFront::Distribution",
-        "DependsOn": acmCertificateResource[0],
+        "DependsOn": [s3RootBucketResource[0], acmCertificateResource[0]],
         "Properties": {
             "DistributionConfig": {
                 "Enabled": true,
@@ -183,7 +183,7 @@ const cloudFrontWWWDistributionResource = [
     "CloudFrontWWWDistribution",
     {
         "Type": "AWS::CloudFront::Distribution",
-        "DependsOn": acmCertificateResource[0],
+        "DependsOn": [s3WWWBucketResource[0], acmCertificateResource[0]],
         "Properties": {
             "DistributionConfig": {
                 "Enabled": true,
