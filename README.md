@@ -5,7 +5,7 @@ Tired of reading outdated Medium posts or combing through verbose AWS
 documentation just to figure out how to deploy your blog? Deploying static
 websites on AWS shouldn't be so *scar*y.
 
-**SCAR** is a collection of templates that make it easy for you to deploy a
+**SCAR** is a deployment stack that make it easy for you to deploy a
 static website with a custom domain, SSL, and a CDN. All you need is an AWS
 account to get started in three simple steps:
 
@@ -40,7 +40,7 @@ Stacks
 
 ![SCAR stack](src/cloudformation/scar_base_template.png)[]()
 
-The **SCAR** stack is a deployment stack for static websites, using **S**3,
+**SCAR** is a deployment stack for static websites running entirely on AWS, using **S**3,
 **C**loudFront, **A**mazon Certificate Manager, and **R**oute 53. For a given
 domain such as `example.com`, the default SCAR stack will create the following:
 
@@ -58,12 +58,12 @@ All content will be stored in and served out of the `www` S3 bucket.
 Additional stacks with slight variations from the default stack are also
 available:
 
-| Behavior | Default | WWW->Apex |
-|-------|---------|-----------|
-| Apex domain requests | Redirect to `www` | |
-| `www` subdomain requests | | Redirect to apex domain |
-| `http` requests | Redirect to `https` | Redirect to `https` |
-| | [![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=SCAR&templateURL=https://s3.amazonaws.com/cloudkj/scar_base_template.json) | (Coming Soon) |
+| Behavior | Default | WWW->Apex | Apex only |
+|----------|---------|-----------|-----------|
+| Apex domain requests | Redirect to `www` | | |
+| `www` subdomain requests | | Redirect to apex domain | N/A |
+| `http` requests | Redirect to `https` | Redirect to `https` | Redirect to `https` |
+| | [![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=SCAR&templateURL=https://s3.amazonaws.com/cloudkj/scar_base_template.json) | (Coming Soon) | (Coming Soon) |
 
 Name Server Settings
 --------------------
