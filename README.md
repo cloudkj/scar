@@ -1,5 +1,5 @@
-SCAR: 1-click static websites on AWS
-=====================================
+SCAR: 1-click static website deployment on AWS
+==============================================
 
 Tired of reading outdated blog posts or combing through verbose AWS
 documentation just to figure out how to deploy your blog? Deploying static
