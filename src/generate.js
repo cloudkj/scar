@@ -24,8 +24,12 @@ const s3WWWBucketResource = [
             },
             "AccessControl": "PublicRead",
             "WebsiteConfiguration": {
-                "IndexDocument": "index.html",
-                "ErrorDocument": "404.html"
+                "IndexDocument": {
+                    "Ref": "IndexFilename"
+                },
+                "ErrorDocument": {
+                    "Ref": "ErrorFilename"
+                }
             }
         }
     }
@@ -394,7 +398,9 @@ const customS3UploadWelcomeResource = [
                     ]
                 ]
             },
-            "S3Key": "index.html"
+            "S3Key": {
+                "Ref": "IndexFilename"
+            }
         }
     }
 ];
@@ -419,7 +425,18 @@ const resources = [
 const template = {
     "Parameters": {
         "Domain": {
-            "Type": "String"
+            "Type": "String",
+            "Description": "The apex or root domain of your website, e.g. example.com. Don't include any subdomain parts, such as www."
+        },
+        "IndexFilename": {
+            "Type": "String",
+            "Description": "The filename of the index document for the website.",
+            "Default": "index.html"
+        },
+        "ErrorFilename": {
+            "Type": "String",
+            "Description": "The filename of the error document for the website.",
+            "Default": "404.html"
         }
     },
     "Outputs": {

@@ -1,7 +1,7 @@
 SCAR: 1-click static websites on AWS
 =====================================
 
-Tired of reading outdated Medium posts or combing through verbose AWS
+Tired of reading outdated blog posts or combing through verbose AWS
 documentation just to figure out how to deploy your blog? Deploying static
 websites on AWS shouldn't be so *scar*y.
 
@@ -14,7 +14,7 @@ Quick Start
 
 #### 1. Launch a new stack using the AWS console to create all the required resources
 
-[![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=SCAR&templateURL=https://s3.amazonaws.com/cloudkj/scar_base_template.json) (or select [another stack from below](#stacks))
+[![Launch stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=SCAR&templateURL=https://s3.amazonaws.com/cloudkj/scar_base_template.json)
 
 #### 2. Update the settings at your domain registrar to use the Route 53 name servers
 
@@ -35,8 +35,8 @@ the contents of your website directly with the [S3
 console](https://s3.console.aws.amazon.com/s3/home), or use the [AWS
 CLI](https://aws.amazon.com/cli/) for programmatic control.
 
-Stacks
-------
+Stack
+-----
 
 ![SCAR stack](src/cloudformation/scar_base_template.png)[]()
 
