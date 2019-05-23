@@ -71,14 +71,23 @@ Name Server Settings
 * [GoDaddy](https://www.godaddy.com/help/change-nameservers-for-my-domains-664)
 * [Google Domains](https://support.google.com/domains/answer/3290309?hl=en)
 
+FAQ
+---
+
+### How much will this cost?
+
+For most sites, it will likely cost less than $1 per month. The cost for a Route 53 hosted zone is fixed at $0.50/month; the remaining CloudFront and S3 costs depend on the levels of traffic, but typically amount to a few cents for small levels of traffic.
+
+### What tool did you use to draw the diagram above?
+
+The [AWS CloudFormation Designer tool](https://console.aws.amazon.com/cloudformation/designer/home) allows drag-and-drop creation of templates, and also creates diagrams from existing JSON or YAML template files.
+
 Development
 -----------
 
 TODO:
 
 * Additional templates for bare domain only, www->root
-* See if there's a way to use same set of name servers for Route 53 zone to avoid
-  having to always look up name servers
 * Include certificate validation using CNAME DNS record as part of template.
   Until official CloudFormation support, potential solutions:
   * https://binx.io/blog/2018/10/05/automated-provisioning-of-acm-certificates-using-route53-in-cloudformation/
