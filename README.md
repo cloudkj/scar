@@ -82,19 +82,6 @@ For most sites, it will likely cost less than $1 per month. The cost for a Route
 
 The [AWS CloudFormation Designer tool](https://console.aws.amazon.com/cloudformation/designer/home) allows drag-and-drop creation of templates, and also creates diagrams from existing JSON or YAML template files.
 
-Development
------------
-
-TODO:
-
-* Additional templates for bare domain only, www->root
-* Include certificate validation using CNAME DNS record as part of template.
-  Until official CloudFormation support, potential solutions:
-  * https://binx.io/blog/2018/10/05/automated-provisioning-of-acm-certificates-using-route53-in-cloudformation/
-  * https://github.com/awslabs/aws-cdk/pull/1797
-* Add custom resource to delete the CNAME DNS record used for validation in
-  Route 53 hosted zone
-
 License
 -------
 
