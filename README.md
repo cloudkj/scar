@@ -1,4 +1,4 @@
-SCAR: 1-click static website deployment on AWS
+SCAR: 1-click static website deployment on AWS - An Amazing Project
 ==============================================
 
 Tired of reading outdated blog posts or combing through verbose AWS
