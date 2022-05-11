@@ -372,7 +372,7 @@ const lambdaS3UploadResource = [
         "Type": "AWS::Lambda::Function",
         "Properties": {
             "Handler": "index.handler",
-            "Runtime": "nodejs8.10",
+            "Runtime": "nodejs14.x",
             "Timeout": "30",
             "Role": { "Fn::GetAtt": [iamLambdaS3UploadRoleResource[0], "Arn"] }
         }
