@@ -32,7 +32,7 @@ Use the [CloudFormation](https://console.aws.amazon.com/cloudformation/home)
 console to check the status of the stack. If everything went smoothly, the
 stack deployment event timeline should look something like this:
 
-![SCAR deployment timeline](scar_base_template_stack_deployment_event_timeline.png)
+![SCAR deployment timeline](src/cloudformation/scar_base_template_stack_deployment_event_timeline.png)
 
 After the stack has been created and deployed, you can upload the contents of
 your website directly with the [S3 console](https://s3.console.aws.amazon.com/s3/home),
