@@ -38,8 +38,8 @@ After the stack has been created and deployed, you can upload the contents of
 your website directly with the [S3 console](https://s3.console.aws.amazon.com/s3/home),
 or use the [AWS CLI](https://aws.amazon.com/cli/) for programmatic control.
 
-Stack
------
+Stack Technical Details
+-----------------------
 
 ![SCAR stack](src/cloudformation/scar_base_template.png)[]()
 
