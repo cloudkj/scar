@@ -47,7 +47,12 @@
             ]
           ]
         },
-        "AccessControl": "PublicRead",
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": false,
+          "BlockPublicPolicy": false,
+          "IgnorePublicAcls": false,
+          "RestrictPublicBuckets": false
+        },
         "WebsiteConfiguration": {
           "IndexDocument": {
             "Ref": "IndexFilename"
@@ -55,6 +60,36 @@
           "ErrorDocument": {
             "Ref": "ErrorFilename"
           }
+        }
+      }
+    },
+    "S3WWWBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "S3WWWBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "s3:GetObject",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:aws:s3:::www.",
+                    {
+                      "Ref": "Domain"
+                    },
+                    "/*"
+                  ]
+                ]
+              }
+            }
+          ]
         }
       }
     },
@@ -335,90 +370,6 @@
             }
           }
         ]
-      }
-    },
-    "IAMLambdaS3UploadRole": {
-      "Type": "AWS::IAM::Role",
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Version": "2012-10-17",
-          "Statement": [
-            {
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [
-                  "lambda.amazonaws.com"
-                ]
-              },
-              "Action": [
-                "sts:AssumeRole"
-              ]
-            }
-          ]
-        },
-        "Path": "/",
-        "Policies": [
-          {
-            "PolicyName": "root",
-            "PolicyDocument": {
-              "Version": "2012-10-17",
-              "Statement": [
-                {
-                  "Effect": "Allow",
-                  "Action": [
-                    "logs:*",
-                    "s3:*"
-                  ],
-                  "Resource": "*"
-                }
-              ]
-            }
-          }
-        ]
-      }
-    },
-    "LambdaS3Upload": {
-      "Type": "AWS::Lambda::Function",
-      "Properties": {
-        "Handler": "index.handler",
-        "Runtime": "nodejs14.x",
-        "Timeout": "30",
-        "Role": {
-          "Fn::GetAtt": [
-            "IAMLambdaS3UploadRole",
-            "Arn"
-          ]
-        },
-        "Code": {
-          "ZipFile": "const aws = require('aws-sdk');\nconst https = require(\"https\");\nconst s3 = new aws.S3();\n\nexports.handler = async (event, context) => {\n    return new Promise((resolve, reject) => {\n        switch (event.RequestType) {\n            case 'Create':\n                handleCreate(event, context);\n                break;\n            case 'Update':\n                handleUpdate(event, context);\n                break;\n            case 'Delete':\n                handleDelete(event, context);\n                break;\n        }\n    });\n};\n\nfunction handleCreate(event, context) {\n    const url = event.ResourceProperties.WelcomePageUrl;\n    const bucket = event.ResourceProperties.S3Bucket;\n    const key = event.ResourceProperties.S3Key;\n    console.log(`Uploading contents of ${url} to s3://${bucket}/${key}`);\n\n    https.get(url, (res) => {\n        let data = '';\n        res.on('data', (x) => { data += x; });\n        res.on('end', () => {\n            const params = {\n                ACL: 'public-read',\n                Body: data,\n                ContentType: 'text/html',\n                Bucket: bucket,\n                Key: key\n            };\n            s3.putObject(params, (e, d) => {\n                if (e) {\n                    respond(event, context, 'FAILED', { Message: 'Upload failed'});\n                } else {\n                    respond(event, context, 'SUCCESS', { Message: 'Upload completed'});\n                }\n            });\n        });\n    }).on('error', (e) => {\n        respond(event, context, 'FAILED', { Message: `Upload failed: ${e.message}` });\n    });\n}\n\nfunction handleUpdate(event, context) {\n    respond(event, context, 'SUCCESS', { Message: 'No-op: update event'});\n}\n\nfunction handleDelete(event, context) {\n    const bucket = event.ResourceProperties.S3Bucket;\n    const key = event.ResourceProperties.S3Key;\n    console.log(`Deleting s3://${bucket}/${key}`);\n    \n    s3.deleteObjects({\n        Bucket: bucket,\n        Delete: {\n            Objects: [ { Key: key } ]\n        }\n    }, (e, d) => {\n        if (e) {\n            respond(event, context, 'FAILED', { Message: `Failed to delete s3://${bucket}/${key}: ${e}` });\n        } else {\n            respond(event, context, 'SUCCESS', { Message: `Deleted s3://${bucket}/${key}` });\n        }\n    });\n}\n\nfunction respond(event, context, responseStatus, responseData) {\n    const responseMessage = responseStatus == \"SUCCESS\" ? \"See the details in CloudWatch Log Stream: \" + context.logStreamName : JSON.stringify(responseData.Message);\n\n    var responseBody = JSON.stringify({\n        Status: responseStatus,\n        Reason: responseMessage,\n        PhysicalResourceId: event.StackId + '::' + event.LogicalResourceId,\n        StackId: event.StackId,\n        RequestId: event.RequestId,\n        LogicalResourceId: event.LogicalResourceId,\n        Data: responseData\n    });\n\n    console.log(\"Sending response \" + responseStatus + \": \" + responseBody);\n\n    var url = require(\"url\");\n    var parsedUrl = url.parse(event.ResponseURL);\n    var options = {\n        hostname: parsedUrl.hostname,\n        port: 443,\n        path: parsedUrl.path,\n        method: \"PUT\",\n        headers: {\n            \"content-type\": \"\",\n            \"content-length\": responseBody.length\n        }\n    };\n \n    var request = https.request(options, function(response) {\n        context.done();\n    });\n \n    request.on(\"error\", function(error) {\n        console.log(\"sendResponse Error:\" + error);\n        context.done();\n    });\n  \n    request.write(responseBody);\n    request.end();\n}\n"
-        }
-      }
-    },
-    "CustomS3UploadWelcome": {
-      "Type": "Custom::S3UploadWelcome",
-      "DependsOn": "S3WWWBucket",
-      "Properties": {
-        "ServiceToken": {
-          "Fn::GetAtt": [
-            "LambdaS3Upload",
-            "Arn"
-          ]
-        },
-        "WelcomePageUrl": "https://raw.githubusercontent.com/cloudkj/scar/master/src/welcome.html",
-        "S3Bucket": {
-          "Fn::Join": [
-            "",
-            [
-              "www.",
-              {
-                "Ref": "Domain"
-              }
-            ]
-          ]
-        },
-        "S3Key": {
-          "Ref": "IndexFilename"
-        }
       }
     }
   }
