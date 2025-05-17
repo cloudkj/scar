@@ -1,7 +1,5 @@
 const fs = require('fs');
 
-const welcomePageUrl = "https://raw.githubusercontent.com/cloudkj/scar/master/src/welcome.html";
-
 ////////////////////////////////////////////////////////////////////////////////
 // Resources
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +20,12 @@ const s3WWWBucketResource = [
                     ]
                 ]
             },
-            "AccessControl": "PublicRead",
+            "PublicAccessBlockConfiguration": {
+                "BlockPublicAcls": false,
+                "BlockPublicPolicy": false,
+                "IgnorePublicAcls": false,
+                "RestrictPublicBuckets": false
+            },
             "WebsiteConfiguration": {
                 "IndexDocument": {
                     "Ref": "IndexFilename"
@@ -30,6 +33,40 @@ const s3WWWBucketResource = [
                 "ErrorDocument": {
                     "Ref": "ErrorFilename"
                 }
+            }
+        }
+    }
+];
+
+const s3WWWBucketPolicyResource = [
+    "S3WWWBucketPolicy",
+    {
+        "Type": "AWS::S3::BucketPolicy",
+        "Properties": {
+            "Bucket": {
+                "Ref": s3WWWBucketResource[0]
+            },
+            "PolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Principal": "*",
+                        "Action": "s3:GetObject",
+                        "Resource": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "arn:aws:s3:::www.",
+                                    {
+                                        "Ref": "Domain"
+                                    },
+                                    "/*"
+                                ]
+                            ]
+                        }
+                    }
+                ]
             }
         }
     }
@@ -332,90 +369,15 @@ const route53RecordsResource = [
     }
 ];
 
-const iamLambdaS3UploadRoleResource = [
-    "IAMLambdaS3UploadRole",
-    {
-        "Type": "AWS::IAM::Role",
-        "Properties": {
-            "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": {"Service": ["lambda.amazonaws.com"]},
-                    "Action": ["sts:AssumeRole"]
-                }]
-            },
-            "Path": "/",
-            "Policies": [{
-                "PolicyName": "root",
-                "PolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "logs:*",
-                                "s3:*",
-                            ],
-                            "Resource": "*"
-                        }
-                    ]
-                }
-            }]
-        }
-    }
-];
-
-const lambdaS3UploadResource = [
-    "LambdaS3Upload",
-    {
-        "Type": "AWS::Lambda::Function",
-        "Properties": {
-            "Handler": "index.handler",
-            "Runtime": "nodejs14.x",
-            "Timeout": "30",
-            "Role": { "Fn::GetAtt": [iamLambdaS3UploadRoleResource[0], "Arn"] }
-        }
-    }
-];
-
-const customS3UploadWelcomeResource = [
-    "CustomS3UploadWelcome",
-    {
-        "Type": "Custom::S3UploadWelcome",
-        "DependsOn": s3WWWBucketResource[0],
-        "Properties": {
-            "ServiceToken": { "Fn::GetAtt": [lambdaS3UploadResource[0], "Arn"] },
-            "WelcomePageUrl": welcomePageUrl,
-            "S3Bucket": {
-                "Fn::Join": [
-                    "",
-                    [
-                        "www.",
-                        {
-                            "Ref": "Domain"
-                        }
-                    ]
-                ]
-            },
-            "S3Key": {
-                "Ref": "IndexFilename"
-            }
-        }
-    }
-];
-
 const resources = [
     s3WWWBucketResource,
+    s3WWWBucketPolicyResource,
     s3RootBucketResource,
     route53ZoneResource,
     acmCertificateResource,
     cloudFrontRootDistributionResource,
     cloudFrontWWWDistributionResource,
     route53RecordsResource,
-    iamLambdaS3UploadRoleResource,
-    lambdaS3UploadResource,
-    customS3UploadWelcomeResource
 ];
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -462,14 +424,7 @@ const template = {
 // Main
 ////////////////////////////////////////////////////////////////////////////////
 
-fs.readFile('lambda/upload.js', 'utf8', (err, data) => {
-    // Add inlined lambda function code
-    lambdaS3UploadResource[1]["Properties"]["Code"] = {
-        "ZipFile": data
-    };
-
-    template["Resources"] = {};
-    resources.forEach(r => template["Resources"][r[0]] = r[1]);
+template["Resources"] = {};
+resources.forEach(r => template["Resources"][r[0]] = r[1]);
     
-    console.log(JSON.stringify(template));
-});
+console.log(JSON.stringify(template));
