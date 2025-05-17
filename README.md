@@ -29,11 +29,14 @@ Find and expand the details of the certificate for your domain in the AWS consol
 **_That's all, folks!_**
 
 Use the [CloudFormation](https://console.aws.amazon.com/cloudformation/home)
-console to check the status of the stack. Once it has been created, navigate to
-your given domain, and you should see the SCAR welcome page.  You can now upload
-the contents of your website directly with the [S3
-console](https://s3.console.aws.amazon.com/s3/home), or use the [AWS
-CLI](https://aws.amazon.com/cli/) for programmatic control.
+console to check the status of the stack. If everything went smoothly, the
+stack deployment event timeline should look something like this:
+
+![SCAR deployment timeline](scar_base_template_stack_deployment_event_timeline.png)
+
+After the stack has been created and deployed, you can upload the contents of
+your website directly with the [S3 console](https://s3.console.aws.amazon.com/s3/home),
+or use the [AWS CLI](https://aws.amazon.com/cli/) for programmatic control.
 
 Stack
 -----
@@ -69,7 +72,8 @@ Name Server Settings
 --------------------
 
 * [GoDaddy](https://www.godaddy.com/help/change-nameservers-for-my-domains-664)
-* [Google Domains](https://support.google.com/domains/answer/3290309?hl=en)
+* ~[Google Domains](https://support.google.com/domains/answer/3290309?hl=en)~
+* [Squarespace](https://support.squarespace.com/hc/en-us/articles/4404183898125-Making-changes-to-nameservers)
 
 FAQ
 ---
